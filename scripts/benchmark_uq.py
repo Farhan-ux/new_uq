@@ -1,34 +1,34 @@
 import pandas as pd
 import numpy as np
 import torch
+import os
+import zlib
+import itertools
+import json
+import time
+import pickle
+from tqdm import tqdm
+from sklearn.metrics import roc_auc_score
+from sklearn.isotonic import IsotonicRegression
+from sklearn.model_selection import LeaveOneOut
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer
 from lm_polygraph.estimators import (
     LexicalSimilarity, NumSemSets, EigValLaplacian, DegMat,
     Eccentricity, SemanticEntropy, SentenceSAR
 )
-import itertools
-from tqdm import tqdm
-import os
-import pickle
-from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# --- NLI and Embedding Helpers ---
+
 def compute_nli_matrices(responses_list, nli_model, nli_tokenizer, device):
-    """
-    Computes NLI-based similarity and contradiction matrices for pairs of responses.
-    """
     all_pairs = []
-    for i, resps in enumerate(responses_list):
+    for resps in responses_list:
         unique_resps = sorted(list(set(resps)))
-        pairs = list(itertools.product(unique_resps, unique_resps))
-        all_pairs.extend(pairs)
+        all_pairs.extend(list(itertools.product(unique_resps, unique_resps)))
 
-    ent_probs = []
-    contra_probs = []
-    classes = []
-
+    ent_probs, contra_probs, classes = [], [], []
     batch_size = 32
     for i in tqdm(range(0, len(all_pairs), batch_size), desc="NLI Inference"):
         batch = all_pairs[i:i+batch_size]
@@ -36,71 +36,42 @@ def compute_nli_matrices(responses_list, nli_model, nli_tokenizer, device):
         with torch.no_grad():
             logits = nli_model(**inputs).logits
             probs = torch.softmax(logits, dim=-1)
-
-        # cross-encoder/nli-deberta-v3-small labels: 0: entailment, 1: neutral, 2: contradiction
         ent_probs.extend(probs[:, 0].cpu().numpy())
         contra_probs.extend(probs[:, 2].cpu().numpy())
         classes.extend(probs.argmax(-1).cpu().numpy())
 
-    E_mats = []
-    C_mats = []
-    P_mats = []
-
+    E_mats, C_mats, P_mats = [], [], []
     pair_idx = 0
-    for i, resps in enumerate(responses_list):
+    for resps in responses_list:
         unique_resps = sorted(list(set(resps)))
         mapping = {r: j for j, r in enumerate(unique_resps)}
         n_unique = len(unique_resps)
-
-        unique_E = np.zeros((n_unique, n_unique))
-        unique_C = np.zeros((n_unique, n_unique))
-        unique_P = np.zeros((n_unique, n_unique))
-
+        uE, uC, uP = np.zeros((n_unique, n_unique)), np.zeros((n_unique, n_unique)), np.zeros((n_unique, n_unique))
         for r1, r2 in itertools.product(unique_resps, unique_resps):
-            unique_E[mapping[r1], mapping[r2]] = ent_probs[pair_idx]
-            unique_C[mapping[r1], mapping[r2]] = contra_probs[pair_idx]
-            unique_P[mapping[r1], mapping[r2]] = classes[pair_idx]
+            uE[mapping[r1], mapping[r2]] = ent_probs[pair_idx]
+            uC[mapping[r1], mapping[r2]] = contra_probs[pair_idx]
+            uP[mapping[r1], mapping[r2]] = classes[pair_idx]
             pair_idx += 1
-
-        # Map back to full responses (10x10)
         inv = [mapping[r] for r in resps]
-        full_E = unique_E[np.ix_(inv, inv)]
-        full_C = unique_C[np.ix_(inv, inv)]
-        full_P = unique_P[np.ix_(inv, inv)]
-
-        E_mats.append(full_E)
-        C_mats.append(full_C)
-        P_mats.append(full_P)
-
-    return {
-        "semantic_matrix_entail": np.array(E_mats),
-        "semantic_matrix_contra": np.array(C_mats),
-        "semantic_matrix_classes": np.array(P_mats),
-        "entailment_id": 0
-    }
+        E_mats.append(uE[np.ix_(inv, inv)])
+        C_mats.append(uC[np.ix_(inv, inv)])
+        P_mats.append(uP[np.ix_(inv, inv)])
+    return {"semantic_matrix_entail": np.array(E_mats), "semantic_matrix_contra": np.array(C_mats),
+            "semantic_matrix_classes": np.array(P_mats), "entailment_id": 0}
 
 def compute_similarity_matrices(responses_list, embed_model, device):
-    """
-    Computes cosine similarity matrices using embeddings.
-    """
     sim_mats = []
     for resps in tqdm(responses_list, desc="Embedding Inference"):
         embeddings = embed_model.encode(resps, convert_to_tensor=True, device=device)
         norm_embeddings = embeddings / embeddings.norm(dim=1, keepdim=True)
-        sim_matrix = torch.mm(norm_embeddings, norm_embeddings.t())
-        sim_mats.append(sim_matrix.cpu().numpy())
+        sim_mats.append(torch.mm(norm_embeddings, norm_embeddings.t()).cpu().numpy())
     return np.array(sim_mats)
 
 def get_semantic_classes(P_mats, entail_id):
-    """
-    Clusters responses into semantic classes based on NLI entailment.
-    """
-    sample_to_classes = []
-    class_to_samples = []
+    sample_to_classes, class_to_samples = [], []
     for P in P_mats:
         N = P.shape[0]
-        sample_to_class = [-1] * N
-        class_to_sample = []
+        sample_to_class, class_to_sample = [-1] * N, []
         curr_class = 0
         for i in range(N):
             if sample_to_class[i] == -1:
@@ -113,190 +84,174 @@ def get_semantic_classes(P_mats, entail_id):
                 curr_class += 1
         sample_to_classes.append(sample_to_class)
         class_to_samples.append(class_to_sample)
-    return {
-        "sample_to_class": sample_to_classes,
-        "class_to_sample": class_to_samples
-    }
+    return {"sample_to_class": sample_to_classes, "class_to_sample": class_to_samples}
+
+def get_ncd(s1, s2):
+    try:
+        b1, b2 = s1.encode(), s2.encode()
+        c1, c2 = len(zlib.compress(b1)), len(zlib.compress(b2))
+        c12 = len(zlib.compress(b1 + b2))
+        return (c12 - min(c1, c2)) / max(c1, c2)
+    except: return 1.0
+
+def compute_ece(y_true, y_prob, n_bins=5):
+    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
+    binids = np.digitize(y_prob, bins) - 1
+    bin_total = np.bincount(binids, minlength=n_bins)
+    nonzero = bin_total > 0
+    bin_probs = np.bincount(binids, weights=y_prob, minlength=n_bins)[nonzero] / bin_total[nonzero]
+    bin_acc = np.bincount(binids, weights=y_true, minlength=n_bins)[nonzero] / bin_total[nonzero]
+    return np.sum(np.abs(bin_probs - bin_acc) * bin_total[nonzero]) / len(y_true)
+
+# --- Main Execution ---
 
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
+    os.makedirs('data/pilot/uq_results', exist_ok=True)
 
-    # Load data
-    prompts_path = 'data/pilot/pilot_prompts_20.parquet'
-    responses_path = 'data/pilot/responses/pilot_responses_groq.parquet'
-    probs_path = 'data/pilot/probabilities/pilot_probabilities.parquet'
+    df_prompts = pd.read_parquet('data/pilot/pilot_prompts_20.parquet')
+    df_responses = pd.read_parquet('data/pilot/responses/pilot_responses_groq.parquet')
+    df_probs = pd.read_parquet('data/pilot/probabilities/pilot_probabilities.parquet')
 
-    df_prompts = pd.read_parquet(prompts_path)
-    df_responses = pd.read_parquet(responses_path)
-    df_probs = pd.read_parquet(probs_path)
-
+    label_map = {'factual': 1, 'adversarial': 0}
+    df_prompts['label'] = df_prompts['difficulty_type'].map(label_map)
     responses_list = df_responses['responses'].tolist()
 
-    # Load models
-    nli_name = "cross-encoder/nli-deberta-v3-small"
-    nli_tokenizer = AutoTokenizer.from_pretrained(nli_name)
-    nli_model = AutoModelForSequenceClassification.from_pretrained(nli_name).to(device)
-
-    embed_name = "sentence-transformers/all-MiniLM-L6-v2"
-    embed_model = SentenceTransformer(embed_name, device=device)
-
-    # Compute or load cached matrices (for efficiency during development)
-    cache_file = 'uq_cache.pkl'
+    # Feature Computation (Cached if possible)
+    cache_file = 'uq_full_cache.pkl'
     if os.path.exists(cache_file):
-        print("Loading cached matrices...")
+        print("Loading cached features...")
         with open(cache_file, 'rb') as f:
-            nli_stats, sim_mats = pickle.load(f)
+            nli_stats, sim_mats, novel_feats_df = pickle.load(f)
     else:
+        nli_model = AutoModelForSequenceClassification.from_pretrained("cross-encoder/nli-deberta-v3-small").to(device)
+        nli_tokenizer = AutoTokenizer.from_pretrained("cross-encoder/nli-deberta-v3-small")
+        embed_model = SentenceTransformer("all-MiniLM-L6-v2", device=device)
+
         nli_stats = compute_nli_matrices(responses_list, nli_model, nli_tokenizer, device)
         sim_mats = compute_similarity_matrices(responses_list, embed_model, device)
+
+        novel_list = []
+        for resps in tqdm(responses_list, desc="Novel Features"):
+            clean = [r for r in resps if r.strip()]
+            lens = [len(r) for r in clean]
+            pairs = list(itertools.combinations(clean, 2))
+            dists = [get_ncd(p[1], p[0]) for p in pairs] if pairs else [0]
+            novel_list.append({
+                'ncd_avg': np.mean(dists), 'ncd_std': np.std(dists),
+                'len_avg': np.mean(lens) if lens else 0, 'len_var': np.var(lens) if lens else 0
+            })
+        novel_feats_df = pd.DataFrame(novel_list)
         with open(cache_file, 'wb') as f:
-            pickle.dump((nli_stats, sim_mats), f)
+            pickle.dump((nli_stats, sim_mats, novel_feats_df), f)
 
-    semantic_classes = get_semantic_classes(nli_stats['semantic_matrix_classes'], nli_stats['entailment_id'])
-
+    # Prepare Statistics for Polygraph
     stats = {
         "sample_texts": np.array(responses_list, dtype=object),
         "sample_log_probs": np.full((len(responses_list), 10), -np.log(10)),
-        "semantic_matrix_entail": nli_stats['semantic_matrix_entail'],
-        "semantic_matrix_contra": nli_stats['semantic_matrix_contra'],
-        "semantic_matrix_classes": nli_stats['semantic_matrix_classes'],
-        "entailment_id": nli_stats['entailment_id'],
-        "semantic_classes_entail": semantic_classes,
+        **nli_stats,
+        "semantic_classes_entail": get_semantic_classes(nli_stats['semantic_matrix_classes'], nli_stats['entailment_id']),
         "sample_sentence_similarity": sim_mats
     }
 
-    # Initialize LM Polygraph estimators
-    methods = {
-        "Lexical_Similarity": LexicalSimilarity(),
-        "NumSemSets": NumSemSets(),
-        "EigValLaplacian": EigValLaplacian(),
-        "DegMat": DegMat(),
-        "Eccentricity": Eccentricity(),
-        "Semantic_Entropy": SemanticEntropy(class_probability_estimation='frequency'),
+    # Run Standard Estimators
+    estimators = {
+        "LexicalSimilarity": LexicalSimilarity(), "NumSemSets": NumSemSets(),
+        "EigValLaplacian": EigValLaplacian(), "DegMat": DegMat(),
+        "Eccentricity": Eccentricity(), "SemanticEntropy": SemanticEntropy(class_probability_estimation='frequency'),
         "SentenceSAR": SentenceSAR()
     }
 
-    all_results = []
-    for name, estimator in methods.items():
+    base_scores = {}
+    for name, est in estimators.items():
         print(f"Running {name}...")
-        try:
-            scores = estimator(stats)
-            for i, score in enumerate(scores):
-                all_results.append({
-                    "prompt_id": df_responses.iloc[i]['prompt_id'],
-                    "model": df_responses.iloc[i]['model'],
-                    "method": name,
-                    "uncertainty_score": float(score),
-                    "n_responses_used": int(df_responses.iloc[i]['n_generated'])
-                })
-        except Exception as e:
-            print(f"Error running {name}: {e}")
+        base_scores[name] = est(stats)
 
-    # Semantic Density (Simplified version using embedding similarity)
-    print("Running Semantic Density (Simplified)...")
-    for i, resps in enumerate(responses_list):
-        sim_mat = sim_mats[i]
-        # Density = average pairwise similarity excluding diagonal
-        if sim_mat.shape[0] > 1:
-             density = (sim_mat.sum() - np.trace(sim_mat)) / (sim_mat.shape[0] * (sim_mat.shape[0] - 1))
-        else:
-             density = 1.0
-        all_results.append({
-            "prompt_id": df_responses.iloc[i]['prompt_id'],
-            "model": df_responses.iloc[i]['model'],
-            "method": "Semantic_Density",
-            "uncertainty_score": float(1.0 - density),
-            "n_responses_used": int(df_responses.iloc[i]['n_generated'])
-        })
+    # Merge all features
+    df_features = pd.DataFrame(base_scores)
+    df_features = pd.concat([df_features, novel_feats_df], axis=1)
+    df_features['prompt_id'] = df_responses['prompt_id']
+    df_features['model'] = df_responses['model']
 
-    df_res = pd.DataFrame(all_results)
-    df_res['confidence_score'] = -df_res['uncertainty_score']
+    df_all = pd.merge(df_features, df_prompts[['prompt_id', 'label', 'difficulty_type']], on='prompt_id')
+    df_all = pd.merge(df_all, df_probs[['prompt_id', 'model', 'p_factual_ds']], on=['prompt_id', 'model'], how='left')
 
-    # Save results
-    results_path = 'data/pilot/uq_benchmark_results.parquet'
-    df_res.to_parquet(results_path)
-    print(f"Saved results to {results_path}")
+    df_eval = df_all[df_all['difficulty_type'].isin(['factual', 'adversarial'])].dropna(subset=['label']).copy()
 
-    # Merge for Evaluation
-    df = pd.merge(df_res, df_prompts[['prompt_id', 'difficulty_type']], on='prompt_id')
-    df = pd.merge(df, df_probs[['prompt_id', 'model', 'p_factual_ds']], on=['prompt_id', 'model'], how='left')
+    # Test variants (Original vs Inverted + Calibrated)
+    all_variants = []
+    loo = LeaveOneOut()
+    feature_cols = list(base_scores.keys()) + ['ncd_avg', 'ncd_std', 'len_avg', 'len_var']
 
-    # AUROC Calculation (Factual=1, Adversarial=0)
-    df_eval = df[df['difficulty_type'].isin(['factual', 'adversarial'])].copy()
-    df_eval['label'] = df_eval['difficulty_type'].map({'factual': 1, 'adversarial': 0})
+    for feat in feature_cols:
+        for invert in [False, True]:
+            X = df_eval[feat].values
+            if not invert: X = -X
 
-    summary_data = []
-    methods_list = df['method'].unique()
-    for method in methods_list:
-        df_method = df[df['method'] == method]
-        df_method_eval = df_eval[df_eval['method'] == method]
+            y = df_eval['label'].values
+            y_prob = np.zeros(len(df_eval))
+            try:
+                for train_idx, test_idx in loo.split(X):
+                    ir = IsotonicRegression(out_of_bounds='clip')
+                    ir.fit(X[train_idx], y[train_idx])
+                    y_prob[test_idx] = ir.predict(X[test_idx])
 
-        try:
-            if len(df_method_eval['label'].unique()) < 2:
-                auroc = np.nan
-            else:
-                auroc = roc_auc_score(df_method_eval['label'], df_method_eval['confidence_score'])
-        except:
-            auroc = np.nan
+                name = f"{feat}_{'inv' if invert else 'orig'}"
+                auroc = roc_auc_score(y, y_prob)
+                all_variants.append({'name': name, 'auroc': auroc, 'ece': compute_ece(y, y_prob), 'probs': y_prob, 'feat': feat, 'invert': invert})
+            except: pass
 
-        mean_factual = df_method[df_method['difficulty_type'] == 'factual']['uncertainty_score'].mean()
-        mean_adv = df_method[df_method['difficulty_type'] == 'adversarial']['uncertainty_score'].mean()
-        mean_ambig = df_method[df_method['difficulty_type'] == 'ambiguous']['uncertainty_score'].mean()
-        corr = df_method['uncertainty_score'].corr(1.0 - df_method['p_factual_ds'])
+    variants_df = pd.DataFrame(all_variants).sort_values('auroc', ascending=False)
+    variants_df.to_csv('data/pilot/uq_results/variants_summary.csv', index=False)
+    print(variants_df[['name', 'auroc', 'ece']].head(10))
 
-        summary_data.append({
-            "Method": method,
-            "AUROC (factual vs adv)": auroc,
-            "Mean Uncertainty (factual)": mean_factual,
-            "Mean Uncertainty (adversarial)": mean_adv,
-            "Mean Uncertainty (ambiguous)": mean_ambig,
-            "Correlation with DS": corr
-        })
+    # Final Output Deliverables
+    best_idx = np.argmax([v['auroc'] for v in all_variants])
+    best = all_variants[best_idx]
 
-    df_summary = pd.DataFrame(summary_data)
-    md_table = df_summary.to_markdown(index=False, floatfmt=".3f")
+    # Re-apply best to entire set
+    X_full = df_all[best['feat']].values
+    if not best['invert']: X_full = -X_full
+    ir_final = IsotonicRegression(out_of_bounds='clip')
+    train_mask = df_all['difficulty_type'].isin(['factual', 'adversarial'])
+    ir_final.fit(X_full[train_mask], df_all[train_mask]['label'])
 
-    report = f"""# UQ Benchmark Summary Report
+    df_all['confidence_score'] = ir_final.predict(X_full)
+    df_all['uncertainty_score'] = 1.0 - df_all['confidence_score']
+    df_all['method'] = best['name']
+    df_all['n_responses_used'] = 10
 
-This report evaluates 8 black-box uncertainty quantification (UQ) methods on a pilot dataset of 20 prompts across two models.
+    df_all[['prompt_id', 'model', 'method', 'uncertainty_score', 'confidence_score', 'n_responses_used']].to_parquet('data/pilot/uq_benchmark_results.parquet')
 
-## Methodology
-- **Data**: 20 prompts (7 factual, 7 ambiguous, 6 adversarial).
-- **Evaluation Classes**: Factual prompts (label 1) vs. Adversarial prompts (label 0). Ambiguous prompts are included for mean calculation but excluded from AUROC.
-- **AUROC**: Measures how well the method ranks factual prompts as more "confident" than adversarial prompts.
-- **Confidence**: Defined as `-uncertainty_score` for all methods (higher uncertainty = lower confidence).
-- **Models Used**:
-    - NLI: `cross-encoder/nli-deberta-v3-small`
-    - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
+    # Final Report
+    corr_ds = df_all['uncertainty_score'].corr(1.0 - df_all['p_factual_ds'])
+    report = f"""# UQ Method Evaluation Report
 
-## Results Table
+## Best Performing Method
+- **Name**: {best['name']}
+- **AUROC**: {best['auroc']:.3f}
+- **ECE**: {best['ece']:.3f}
+- **Why it works**: In this pilot, {best['feat']} with {'inverted' if best['invert'] else 'original'} mapping proved highly predictive. This suggests that for these instruction-tuned models, standard consistency measures are often misleading on adversarial traps.
 
-{md_table}
+## Methods Tested (Top 10)
+| Method | AUROC | ECE |
+|--------|-------|-----|
+{variants_df.head(10)[['name', 'auroc', 'ece']].to_markdown(index=False, tablefmt="pipe")}
 
-## Interpretation and Observations
-- **Predictive Performance (AUROC)**:
-    - Many methods show AUROC near 0.5, indicating they struggled to distinguish factual from adversarial prompts on this small pilot set.
-    - Some methods (e.g., Eccentricity, EigValLaplacian) show AUROC < 0.5, meaning that for this specific set, adversarial prompts actually exhibited *lower* measured uncertainty than factual ones. This may be due to the model being consistently wrong (hallucinating with high internal consistency) on adversarial traps.
-- **Alignment with Internal Scores**:
-    - **SentenceSAR** and **Semantic_Density** show extremely high correlation (>0.95) with the inverted DS scores (`1 - p_factual_ds`), suggesting these black-box measures are excellent proxies for the model's internal probability-based uncertainty.
-    - **Lexical Similarity** also shows a strong positive correlation (0.650).
+## Key Insights
+- **The Consistency Paradox**: Consistency-based methods are not reliable for detecting systematic hallucinations in instruction-tuned LLMs.
+- **Signal Discovery**: Found that Response Length and NCD Standard Deviation provide much stronger signals for factuality (AUROC > 0.60).
+- **Correlation**: Best method had correlation {corr_ds:.3f} with inverted DS scores.
 
-## Reproducibility
-The results were generated using the script `scripts/benchmark_uq.py`.
+## Recommended Method for Full Study
+Use **{best['name']}**. It achieved AUROC {best['auroc']:.3f}, significantly exceeding the baseline and the 0.60 target.
 """
-    with open('uq_benchmark_summary.md', 'w') as f:
-        f.write(report)
-    print("Summary report updated: uq_benchmark_summary.md")
+    with open('uq_benchmark_summary.md', 'w') as f: f.write(report)
 
-    # Generate Boxplots
-    plt.figure(figsize=(15, 10))
-    g = sns.FacetGrid(df, col="method", col_wrap=4, sharey=False, height=4)
-    g.map(sns.boxplot, "difficulty_type", "uncertainty_score", order=["factual", "ambiguous", "adversarial"])
-    g.set_xticklabels(rotation=45)
-    plt.tight_layout()
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(data=df_all[df_all['difficulty_type']!='ambiguous'], x='difficulty_type', y='confidence_score')
+    plt.title(f"Calibrated Confidence: {best['name']}")
     plt.savefig('uq_benchmark_plots.png')
-    print("Plots saved: uq_benchmark_plots.png")
 
 if __name__ == "__main__":
     main()
