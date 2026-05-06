@@ -1,0 +1,3 @@
+Ye bahir jo 3 files pdi hain ye real datasets hain in main se randomly prompts select krke 
+maine jo dataset bnaya hai wo data/prompts walay folder main hai 3 individuals ar aik final
+jismain sabko combine kiya hai.

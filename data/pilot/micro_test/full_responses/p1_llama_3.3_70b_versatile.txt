@@ -1,0 +1,26 @@
+PROMPT ID: p1
+PROMPT TYPE: factual_simple
+MODEL: llama-3.3-70b-versatile
+PROMPT TEXT: What is the chemical symbol for gold?
+======================================================================
+
+[ 1] The chemical symbol for gold is Au. This comes from the Latin word for gold, "aurum."
+
+[ 2] The chemical symbol for gold is Au. It comes from the Latin word for gold, "aurum."
+
+[ 3] The chemical symbol for gold is Au. This comes from the Latin word for gold, 'Aurum'.
+
+[ 4] The chemical symbol for gold is Au. This comes from the Latin word for gold, "aurum."
+
+[ 5] The chemical symbol for gold is Au. It comes from the Latin word for gold, 'Aurum'.
+
+[ 6] The chemical symbol for gold is Au. It comes from the Latin word for gold, "aurum."
+
+[ 7] The chemical symbol for gold is Au. It comes from the Latin word for gold, 'aurum'.
+
+[ 8] The chemical symbol for gold is Au. This comes from the Latin word for gold, "aurum."
+
+[ 9] The chemical symbol for gold is Au. It comes from the Latin word for gold, "Aurum."
+
+[10] The chemical symbol for gold is Au. It comes from the Latin word for gold, "aurum."
+

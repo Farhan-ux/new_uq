@@ -1,0 +1,11 @@
+prompt_id,prompt_type,model,n_valid,mean_pairwise_sim,ds_raw,p_factual_inverted,expected
+p1,factual_simple,llama-3.1-8b-instant,10,0.9598302,1.0,0.0,HIGH P(factual) expected (correct answers)
+p1,factual_simple,llama-3.3-70b-versatile,10,0.99607253,1.0,0.0,HIGH P(factual) expected (correct answers)
+p2,factual_medical,llama-3.1-8b-instant,10,0.93245995,0.9555555555555555,0.04444444444444451,HIGH P(factual) expected (correct answers)
+p2,factual_medical,llama-3.3-70b-versatile,10,0.952258,1.0,0.0,HIGH P(factual) expected (correct answers)
+p3,adversarial_trick,llama-3.1-8b-instant,10,0.8501492,0.7222222222222222,0.2777777777777778,LOW P(factual) expected IF model repeats myth; HIGH if it corrects
+p3,adversarial_trick,llama-3.3-70b-versatile,10,0.94333977,1.0,0.0,LOW P(factual) expected IF model repeats myth; HIGH if it corrects
+p4,ambiguous_history,llama-3.1-8b-instant,10,0.9352455,1.0,0.0,MODERATE-HIGH P(factual) expected (legitimate variation OK)
+p4,ambiguous_history,llama-3.3-70b-versatile,10,0.9503054,1.0,0.0,MODERATE-HIGH P(factual) expected (legitimate variation OK)
+p5,adversarial_misconception,llama-3.1-8b-instant,10,0.92317563,1.0,0.0,LOW P(factual) expected IF model repeats myth; HIGH if it corrects
+p5,adversarial_misconception,llama-3.3-70b-versatile,10,0.927749,0.9888888888888889,0.011111111111111072,LOW P(factual) expected IF model repeats myth; HIGH if it corrects

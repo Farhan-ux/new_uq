@@ -1,0 +1,102 @@
+PROMPT ID: p2
+PROMPT TYPE: factual_medical
+MODEL: llama-3.1-8b-instant
+PROMPT TEXT: List three common symptoms of Type 2 diabetes.
+======================================================================
+
+[ 1] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased Thirst and Urination**: When there is excess glucose in the blood, the kidneys work harder to filter it out, leading to increased urination. This can cause dehydration, resulting in excessive thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, as the body's cells are not receiving the energy they need. This can make everyday activities feel more exhausting.
+
+3. **Blurry Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurry vision. This can be a symptom of Type 2 diabetes, especially if it is not managed properly.
+
+It's worth noting that many people with Type 2 diabetes do not experience any symptoms at all, especially in the early stages. Regular check-ups and screenings can help diagnose the condition before symptoms appear.
+
+[ 2] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased thirst and urination**: When there's too much glucose in the blood, the body tries to flush it out by producing more urine. This can lead to dehydration, causing increased thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, as the body's cells are not getting the energy they need from glucose.
+
+3. **Blurred vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision. This is because the excess glucose in the blood can cause the lens to become distorted, affecting the way light enters the eye.
+
+It's worth noting that some people with Type 2 diabetes may not experience any noticeable symptoms at all, at least in the early stages. If you're concerned about your risk of developing Type 2 diabetes, it's always best to consult with a healthcare professional.
+
+[ 3] Three common symptoms of Type 2 diabetes are:
+
+1. **Increased Thirst and Urination**: When there is excess glucose in the blood, the kidneys work harder to filter it out, leading to increased urine production. This can cause dehydration, resulting in thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue and weakness due to the body's inability to use glucose for energy.
+
+3. **Blurry Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision. This is a common symptom of Type 2 diabetes, and it can be temporary or permanent if left untreated.
+
+[ 4] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased thirst and hunger**: When there's too much glucose in the blood, the body tries to flush it out by producing more urine. This can lead to dehydration, causing increased thirst. Additionally, the body may not be able to effectively use insulin, leading to increased hunger.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, as the body's cells are not getting the energy they need. This can make it difficult to perform daily activities and may lead to feelings of exhaustion.
+
+3. **Frequent urination**: As mentioned earlier, when there's too much glucose in the blood, the body tries to flush it out by producing more urine. This can lead to frequent trips to the bathroom, especially at night.
+
+It's worth noting that some people with Type 2 diabetes may not experience any symptoms at all, at least not in the early stages. Regular check-ups and screenings are essential to detect the condition
+
+[ 5] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased thirst and urination**: High blood sugar levels can cause the body to produce more urine, leading to frequent urination. This can result in dehydration, causing the body to produce more urine, and creating a cycle. Additionally, the body may crave more fluids to compensate for the lost fluids, leading to increased thirst.
+
+2. **Fatigue and weakness**: High blood sugar levels can damage the nerves and muscles, leading to feelings of fatigue, weakness, and a general lack of energy.
+
+3. **Blurred vision**: High blood sugar levels can damage the blood vessels in the eyes, leading to blurred vision, double vision, or even loss of vision. This is because the excess sugar in the blood can cause the lenses in the eyes to become cloudy or swell, impairing vision.
+
+It's worth noting that many people with Type 2 diabetes may not experience any noticeable symptoms at all, or the symptoms may be mild and
+
+[ 6] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased Thirst and Urination**: High blood sugar levels can cause the body to produce more urine, leading to frequent trips to the bathroom and excessive thirst.
+
+2. **Fatigue**: When the body's cells are unable to use glucose for energy, it can cause feelings of tiredness, weakness, and fatigue.
+
+3. **Blurred Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision or double vision. This symptom can be temporary and may improve once blood sugar levels are under control.
+
+It's worth noting that many people with Type 2 diabetes may not experience any symptoms at all, at least not in the early stages of the disease. That's why regular check-ups with a healthcare provider and screening tests are crucial for early detection and treatment.
+
+[ 7] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased Thirst and Urination**: When there is excess glucose in the blood, the kidneys work harder to filter it out, leading to increased urine production. This can cause dehydration, resulting in increased thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, weakness, and a lack of energy. This is because the body's cells are not getting the glucose they need for energy.
+
+3. **Blurred Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision. This is because the excess glucose in the blood is drawn into the lens, causing it to swell.
+
+It's worth noting that many people with Type 2 diabetes may not experience any noticeable symptoms in the early stages of the disease. In these cases, the condition may only be detected through routine blood tests.
+
+[ 8] Three common symptoms of Type 2 diabetes are:
+
+1. **Increased Thirst and Frequent Urination**: As the body tries to eliminate excess glucose through urine, you may feel the need to drink more water and urinate more frequently.
+
+2. **Fatigue and Weakness**: High blood sugar levels can cause fatigue, weakness, and a general feeling of being unwell.
+
+3. **Blurred Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision or double vision.
+
+[ 9] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased Thirst and Urination**: When there is excess glucose in the blood, the kidneys work harder to filter it out, leading to increased urine production. This can cause dehydration, resulting in excessive thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, weakness, and a general feeling of being unwell. This is because the body's cells are not receiving the glucose they need for energy.
+
+3. **Blurred Vision**: High blood sugar levels can cause the lens in the eye to swell, leading to blurred vision. This symptom is often temporary and resolves once blood sugar levels return to normal.
+
+It's essential to note that some people with Type 2 diabetes may not experience any noticeable symptoms at all, or the symptoms may be mild and develop gradually over time. Regular check-ups and screenings are crucial for early detection and management of the condition.
+
+[10] Here are three common symptoms of Type 2 diabetes:
+
+1. **Increased Thirst and Frequent Urination**: When your body is unable to effectively use insulin, glucose builds up in your blood. As a result, your kidneys work harder to filter the excess glucose, leading to increased urine production. This can cause dehydration, leading to excessive thirst.
+
+2. **Fatigue**: High blood sugar levels can cause fatigue, as your body's cells are not receiving the glucose they need for energy. This can make you feel weak, tired, and lacking in energy.
+
+3. **Blurry Vision**: High blood sugar levels can cause the lens in your eye to swell, leading to blurry vision. This is because the lens is unable to focus properly due to the excess glucose in the blood.
+
+It's worth noting that many people with Type 2 diabetes do not experience these symptoms in the early stages of the disease. In fact, some people may not experience any symptoms at all until the disease has progressed
+

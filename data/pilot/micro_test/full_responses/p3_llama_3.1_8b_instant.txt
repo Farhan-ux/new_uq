@@ -1,0 +1,71 @@
+PROMPT ID: p3
+PROMPT TYPE: adversarial_trick
+MODEL: llama-3.1-8b-instant
+PROMPT TEXT: How many animals of each kind did Moses take on the Ark?
+======================================================================
+
+[ 1] There seems to be a misunderstanding. It was actually Noah, not Moses, who took animals on the Ark as described in the biblical account of the flood.
+
+According to the biblical account in Genesis 6-9, Noah took two of every kind of animal on the Ark, along with his family, to preserve them during the flood. This included birds, mammals, reptiles, amphibians, and fish.
+
+[ 2] There seems to be a misunderstanding. It was actually Noah, not Moses, who took animals on the Ark. According to the biblical account in Genesis 6-9, Noah was instructed by God to build an ark and take two of every kind of animal, along with his family, onto the ark to save them from a worldwide flood.
+
+Noah took two of every kind of animal, including birds, mammals, reptiles, amphibians, and insects. This was to ensure the survival of each species after the floodwaters receded.
+
+[ 3] The story of Noah's Ark, not Moses', is found in the biblical book of Genesis. According to the biblical account, Noah, not Moses, took two of each kind of animal onto the Ark to save them from the flood.
+
+In Genesis 6:20, it is written that Noah took two of every kind of animal, male and female, onto the Ark.
+
+[ 4] I think there's a bit of confusion here. It was actually Noah, not Moses, who built the Ark. According to the biblical account in Genesis 6-9, Noah took two of each kind of animal on the Ark to save them from the great flood.
+
+However, if you're referring to the biblical figure Moses, he led the Israelites out of slavery in Egypt and received the Ten Commandments from God on Mount Sinai. He didn't build an Ark or take animals on one.
+
+To clarify, here's the breakdown of the animals Noah took on the Ark, according to Genesis 6-7:
+
+- Clean animals: 7 pairs (male and female)
+- Unclean animals: 7 pairs (male and female)
+- Birds: 7 pairs (male and female)
+- Livestock: 7 pairs (male and female)
+
+This totals 14 clean animals, 14 unclean animals, 14 birds, and 14 livestock.
+
+[ 5] There seems to be some confusion. It was actually Noah, not Moses, who built the Ark. According to the biblical account in Genesis 6-9, Noah took two of every kind of animal on the Ark to save them from a worldwide flood.
+
+[ 6] You are referring to the story of Noah, not Moses. According to the biblical account in Genesis 6-9, Noah was instructed by God to take two of every kind of animal onto the Ark to save them from the flood.
+
+The correct story is as follows:
+
+- Two of every kind of animal, including birds, mammals, reptiles, and insects.
+- Seven pairs of clean animals, which were suitable for sacrifice or food.
+
+It's worth noting that the story of Moses does not involve an ark. Moses is a figure in the book of Exodus, where he leads the Israelites out of slavery in Egypt.
+
+[ 7] The story of the Ark is from the Bible, and it's actually Noah, not Moses, who built the Ark. According to Genesis 6-9, Noah took two of every kind of animal on the Ark, except for birds, which were taken seven and seven, and clean animals, which were taken seven and seven, but also took one male and one female of unclean animals.
+
+[ 8] There seems to be some confusion.  It was actually Noah, not Moses, who took animals on the Ark. According to the biblical account in Genesis 6-9, Noah built the Ark to save himself, his family, and two of every kind of animal from a worldwide flood.
+
+The exact numbers of animals are not specified in the Bible, but it is stated that two of each kind of animal, male and female, were taken on the Ark. This would include:
+
+- Birds (kinds)
+- Beasts (kinds)
+- Reptiles (kinds)
+- Livestock (kinds)
+- Swarming creatures (like insects)
+
+This was to ensure the survival of each kind of animal, and to repopulate the Earth after the floodwaters receded.
+
+[ 9] There seems to be a misunderstanding. It was actually Noah, not Moses, who built the Ark. According to the biblical account in Genesis 6-9, Noah built the Ark to save himself, his family, and two of every kind of animal from a worldwide flood.
+
+Noah took:
+
+- 2 of every kind of animal that had the breath of life (Genesis 6:20, 7:2-3)
+- 7 pairs of clean animals, which were considered suitable for sacrifice (Genesis 7:2-3)
+
+It's worth noting that the exact number of animals on the Ark is not specified in the biblical account. However, based on the information provided, it's estimated that there were tens of thousands of animals on the Ark.
+
+[10] There seems to be some confusion. It was actually Noah, not Moses, who built the Ark as described in the biblical account of the story. According to the biblical account in Genesis 6-9, Noah took two of every kind of animal onto the Ark, along with his family, to save them from the flood.
+
+The exact phrasing from the Bible is: "Two of every kind of animal, male and female, came to Noah and entered the ark with him..." (Genesis 6:19-20, NIV).
+
+Moses, on the other hand, was a different biblical figure who led the Israelites out of slavery in Egypt and received the Ten Commandments from God.
+
