@@ -1,0 +1,19 @@
+[ITERATION 1]
+Hypothesis: Factual truth forms a persistent semantic manifold; TME uses max H0 persistence and heat-kernel centrality to score r1.
+Mathematical/Algorithmic Core: P = sigmoid(2.5 * ln(H_max) + 1.5 * ln(Centrality) + 3.0)
+Pilot Results:
+• AUROC: 0.726
+• ECE: 0.125
+• Probability Range: [0.120, 0.946]
+• Runtime/prompt: 0.180s
+Decision: CONTINUE (All criteria met)
+
+[ITERATION 2]
+Hypothesis: Factual truth manifolds exhibit higher Persistence Entropy (diversity of structure) than singular hallucinations.
+Mathematical/Algorithmic Core: P = sigmoid(4.0 * (H_entropy + Density_0.4) - 6.0)
+Pilot Results:
+• AUROC: 0.429
+• ECE: 0.477
+• Probability Range: [0.083, 0.999]
+• Runtime/prompt: 0.195s
+Decision: ABANDON (AUROC < 0.55)
