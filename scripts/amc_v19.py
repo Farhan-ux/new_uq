@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import torch
-import zlib
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
@@ -9,39 +8,40 @@ from ripser import ripser
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
-def get_lexical_redundancy(resps):
-    ind_sizes = [len(zlib.compress(r.encode())) for r in resps]
-    joint_size = len(zlib.compress(" ".join(resps).encode()))
-    return np.sum(ind_sizes) / (joint_size + 1e-9)
-
-class AMC_Engine:
+class TC_Engine:
     def __init__(self, device="cpu"):
         self.device = device
         self.embed_model = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
 
-    def compute_score(self, resps):
+    def compute_tc(self, resps):
         clean = [r for r in resps if r.strip()]
         n = len(clean)
         if n < 4: return None
         embs = self.embed_model.encode(clean)
+
+        # 1. Persistence Gap
         pca = PCA(n_components=min(n-1, 10))
         emb_red = pca.fit_transform(embs)
-        res_tda = ripser(emb_red, maxdim=1)
-        h0_max = np.max(res_tda['dgms'][0][np.isfinite(res_tda['dgms'][0][:, 1])][:, 1]) if len(res_tda['dgms'][0][np.isfinite(res_tda['dgms'][0][:, 1])]) > 0 else 0
-        h1_max = np.max(res_tda['dgms'][1][:, 1] - res_tda['dgms'][1][:, 0]) if len(res_tda['dgms'][1]) > 0 else 0
-        evs = pca.explained_variance_
-        stable_rank = np.sum(evs) / (evs[0] + 1e-9)
-        cos_sims = cosine_similarity(embs)
-        medoid_idx = np.argmax(np.sum(cos_sims, axis=1))
-        support = (cos_sims[0, medoid_idx] + np.mean(np.sort(cos_sims[0])[-4:-1])) / 2.0
-        redundancy = get_lexical_redundancy(clean)
-<<<<<<< HEAD
-        
-=======
+        res_tda = ripser(emb_red, maxdim=0)
+        h0_lifetimes = np.sort(res_tda['dgms'][0][np.isfinite(res_tda['dgms'][0][:, 1])][:, 1])[::-1]
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
-        # V12 Formula
-        score = (h0_max / (1.0 + h1_max)) * support * redundancy / stable_rank
+        # Dominance = ratio of largest lifetime to second largest
+        l1 = h0_lifetimes[0] if len(h0_lifetimes) > 0 else 0
+        l2 = h0_lifetimes[1] if len(h0_lifetimes) > 1 else 0
+        dominance = l1 / (l2 + 0.1) # Soft constraint
+
+        # 2. Spectral Compression
+        evs = pca.explained_variance_
+        pr = (np.sum(evs)**2) / (np.sum(evs**2) + 1e-9)
+
+        # 3. Representativeness
+        cos_sims = cosine_similarity(embs)
+        r1_support = np.mean(np.sort(cos_sims[0])[-4:-1])
+
+        # TC Formula
+        # Factual truth is Dominant (l1/l2), Consistent (r1_support), and Low-Rank (1/pr)
+        score = (dominance * r1_support) / (pr**0.5)
+
         return score
 
 def run():
@@ -52,25 +52,16 @@ def run():
     df_prompts['label'] = df_prompts['difficulty_type'].map(label_map)
     df = pd.merge(df_responses, df_prompts[['prompt_id', 'label']], on='prompt_id')
     df = df[df['label'].isin([0, 1])].copy()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    engine = AMC_Engine(device=device)
+    engine = TC_Engine(device=device)
     scores, labels, models = [], [], []
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        s = engine.compute_score(row['responses'])
+        s = engine.compute_tc(row['responses'])
         if s is not None:
             scores.append(s); labels.append(row['label']); models.append(row['model'])
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
-    auc = roc_auc_score(labels, scores)
-    print(f"\nFinal AMC (v12) AUROC: {auc:.4f}")
+    print(f"\nOverall TC AUROC: {roc_auc_score(labels, scores):.4f}")
     df_res = pd.DataFrame({'label': labels, 'score': scores, 'model': models})
     for m in df_res['model'].unique():
         print(f"Model {m} AUROC: {roc_auc_score(df_res[df_res['model']==m]['label'], df_res[df_res['model']==m]['score']):.4f}")

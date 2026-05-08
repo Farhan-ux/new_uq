@@ -26,16 +26,24 @@ class AMC_Engine:
     def compute_amc(self, resps):
         clean = [r for r in resps if r.strip()]
         if len(clean) < 4: return None
+<<<<<<< HEAD
         
         # 1. Embeddings
         embs = self.embed_model.encode(clean)
         
+=======
+
+        # 1. Embeddings
+        embs = self.embed_model.encode(clean)
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         # 2. PCA & Participation Ratio (Smooth ID)
         n_comp = min(len(clean) - 1, 10)
         pca = PCA(n_components=n_comp)
         emb_reduced = pca.fit_transform(embs)
         evs = pca.explained_variance_
         pr = (np.sum(evs)**2) / (np.sum(evs**2) + 1e-9)
+<<<<<<< HEAD
         
         # 3. Persistent Homology (H0 and H1)
         # H1 persistence captures semantic loops/confusion
@@ -48,6 +56,20 @@ class AMC_Engine:
         h1 = res_tda['dgms'][1]
         h1_max = np.max(h1[:, 1] - h1[:, 0]) if len(h1) > 0 else 0
         
+=======
+
+        # 3. Persistent Homology (H0 and H1)
+        # H1 persistence captures semantic loops/confusion
+        res_tda = ripser(emb_reduced, maxdim=1)
+
+        h0 = res_tda['dgms'][0]
+        h0_finite = h0[np.isfinite(h0[:, 1])]
+        h0_max = np.max(h0_finite[:, 1]) if len(h0_finite) > 0 else 0
+
+        h1 = res_tda['dgms'][1]
+        h1_max = np.max(h1[:, 1] - h1[:, 0]) if len(h1) > 0 else 0
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         # 4. Centrality
         dist_matrix = euclidean_distances(embs)
         sigma = np.median(dist_matrix[np.triu_indices(len(clean), k=1)])
@@ -55,16 +77,28 @@ class AMC_Engine:
         kernel_matrix = np.exp(-(dist_matrix**2) / (2 * sigma**2))
         gammas = np.mean(kernel_matrix, axis=1)
         gamma_rel = gammas[0] / (np.median(gammas) + 1e-9)
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         # 5. AMC Score
         # Reward H0 persistence and primary support
         # Penalize intrinsic dimensionality and semantic cycles
         amc_score = (h0_max * gamma_rel) / (pr * (1.0 + h1_max))
+<<<<<<< HEAD
         
         # 6. Probabilistic Mapping (Sigmoid)
         # Shifted to accommodate AMC scale
         p_amc = float(scipy.special.expit(8.0 * amc_score - 4.0))
         
+=======
+
+        # 6. Probabilistic Mapping (Sigmoid)
+        # Shifted to accommodate AMC scale
+        p_amc = float(scipy.special.expit(8.0 * amc_score - 4.0))
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         return p_amc
 
 def run():
@@ -76,14 +110,21 @@ def run():
     df_prompts['label'] = df_prompts['difficulty_type'].map(label_map)
     df = pd.merge(df_responses, df_prompts[['prompt_id', 'label']], on='prompt_id')
     df = df[df['label'].isin([0, 1])].copy()
+<<<<<<< HEAD
     
     amc = AMC_Engine(device="cuda" if torch.cuda.is_available() else "cpu")
     
+=======
+
+    amc = AMC_Engine(device="cuda" if torch.cuda.is_available() else "cpu")
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     results = []
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Evaluating AMC"):
         p = amc.compute_amc(row['responses'])
         if p is not None:
             results.append({'prompt_id': row['prompt_id'], 'model': row['model'], 'label': row['label'], 'AMC': p})
+<<<<<<< HEAD
             
     df_res = pd.DataFrame(results)
     
@@ -95,6 +136,19 @@ def run():
     print(f"Overall AUROC: {auc_val:.4f}")
     print(f"Overall ECE: {ece_val:.4f}")
     
+=======
+
+    df_res = pd.DataFrame(results)
+
+    # Eval
+    auc_val = roc_auc_score(df_res['label'], df_res['AMC'])
+    ece_val = compute_ece(df_res['label'].values, df_res['AMC'].values)
+
+    print(f"\n--- AMC Performance ---")
+    print(f"Overall AUROC: {auc_val:.4f}")
+    print(f"Overall ECE: {ece_val:.4f}")
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     # Model breakdown
     for model in df_res['model'].unique():
         df_m = df_res[df_res['model'] == model]

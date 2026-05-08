@@ -10,7 +10,11 @@ import sys
 class factuality_uq:
     """
     Semantic-Algorithmic Manifold Evidence (SAME)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     A black-box uncertainty quantification method for LLM factuality.
     Developed by Jules for the Autonomous Research Directive.
     """
@@ -19,17 +23,28 @@ class factuality_uq:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         # Auxiliary model for semantic embedding (black-box restriction maintained)
         self.embed_model = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
 
     def estimate_factuality(self, responses):
         """
         Calculates the probability that the first response in the ensemble is correct.
+<<<<<<< HEAD
         
         Args:
             responses (list of str): 10 stochastic responses to a prompt.
             
+=======
+
+        Args:
+            responses (list of str): 10 stochastic responses to a prompt.
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         Returns:
             float: Calibrated probability P(factual) ∈ [0, 1].
         """
@@ -39,7 +54,11 @@ class factuality_uq:
 
         # 1. Embeddings
         embs = self.embed_model.encode(clean)
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         # 2. PCA & Intrinsic Dimensionality Proxy
         n_comp = min(len(clean) - 1, 10)
         pca = PCA(n_components=n_comp)
@@ -57,6 +76,7 @@ class factuality_uq:
         triu_idx = np.triu_indices(len(clean), k=1)
         sigma = np.median(dist_matrix[triu_idx])
         if sigma == 0: sigma = 0.5
+<<<<<<< HEAD
         
         kernel_matrix = np.exp(-(dist_matrix**2) / (2 * sigma**2))
         gammas = np.mean(kernel_matrix, axis=1)
@@ -70,6 +90,21 @@ class factuality_uq:
         # k=5.8385, b=-0.4740 optimized to minimize ECE on 100-prompt benchmark.
         p_factual = float(scipy.special.expit(5.8385 * same_score - 0.4740))
         
+=======
+
+        kernel_matrix = np.exp(-(dist_matrix**2) / (2 * sigma**2))
+        gammas = np.mean(kernel_matrix, axis=1)
+        gamma_rel = gammas[0] / (np.median(gammas) + 1e-9)
+
+        # 5. SAME Scoring & Sigmoid Calibration
+        # Signal incorporates persistence, relative centrality, and dimensionality penalty.
+        same_score = (h_max * gamma_rel) / (id_proxy + 1)
+
+        # 6. Calibrated Probabilistic Mapping
+        # k=5.8385, b=-0.4740 optimized to minimize ECE on 100-prompt benchmark.
+        p_factual = float(scipy.special.expit(5.8385 * same_score - 0.4740))
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
         return p_factual
 
 if __name__ == "__main__":

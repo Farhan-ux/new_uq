@@ -15,19 +15,31 @@ def get_raw_signals(resps):
     emb_reduced = pca.fit_transform(embs)
     evr = pca.explained_variance_ratio_
     id_proxy = np.sum(evr > 0.05)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     res_tda = ripser(emb_reduced, maxdim=0)
     h0 = res_tda['dgms'][0]
     h0_finite = h0[np.isfinite(h0[:, 1])]
     h_max = np.max(h0_finite[:, 1]) if len(h0_finite) > 0 else 0
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     dist_matrix = euclidean_distances(embs)
     sigma = np.median(dist_matrix[np.triu_indices(len(clean), k=1)])
     if sigma == 0: sigma = 0.5
     kernel_matrix = np.exp(-(dist_matrix**2) / (2 * sigma**2))
     gammas = np.mean(kernel_matrix, axis=1)
     gamma_rel = gammas[0] / (np.median(gammas) + 1e-9)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     return h_max, gamma_rel, id_proxy
 
 df_responses = pd.read_parquet('data/pilot/responses_100/responses.parquet')

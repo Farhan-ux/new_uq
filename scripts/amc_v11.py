@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import torch
-import zlib
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
@@ -9,39 +8,41 @@ from ripser import ripser
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
-def get_lexical_redundancy(resps):
-    ind_sizes = [len(zlib.compress(r.encode())) for r in resps]
-    joint_size = len(zlib.compress(" ".join(resps).encode()))
-    return np.sum(ind_sizes) / (joint_size + 1e-9)
-
-class AMC_Engine:
+class TSA_Engine:
     def __init__(self, device="cpu"):
         self.device = device
         self.embed_model = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
 
-    def compute_score(self, resps):
+    def compute_tsa(self, resps):
         clean = [r for r in resps if r.strip()]
-        n = len(clean)
-        if n < 4: return None
+        if len(clean) < 4: return None
         embs = self.embed_model.encode(clean)
-        pca = PCA(n_components=min(n-1, 10))
+
+        # 1. Singular Values for Stable Rank
+        # embs shape: (10, 384). Center them.
+        embs_centered = embs - np.mean(embs, axis=0)
+        u, s, vh = np.linalg.svd(embs_centered, full_matrices=False)
+        stable_rank = np.sum(s**2) / (s[0]**2 + 1e-9)
+
+        # 2. Persistence Stability (H0 & H1)
+        pca = PCA(n_components=min(len(clean)-1, 10))
         emb_red = pca.fit_transform(embs)
         res_tda = ripser(emb_red, maxdim=1)
-        h0_max = np.max(res_tda['dgms'][0][np.isfinite(res_tda['dgms'][0][:, 1])][:, 1]) if len(res_tda['dgms'][0][np.isfinite(res_tda['dgms'][0][:, 1])]) > 0 else 0
-        h1_max = np.max(res_tda['dgms'][1][:, 1] - res_tda['dgms'][1][:, 0]) if len(res_tda['dgms'][1]) > 0 else 0
-        evs = pca.explained_variance_
-        stable_rank = np.sum(evs) / (evs[0] + 1e-9)
-        cos_sims = cosine_similarity(embs)
-        medoid_idx = np.argmax(np.sum(cos_sims, axis=1))
-        support = (cos_sims[0, medoid_idx] + np.mean(np.sort(cos_sims[0])[-4:-1])) / 2.0
-        redundancy = get_lexical_redundancy(clean)
-<<<<<<< HEAD
-        
-=======
+        h0 = res_tda['dgms'][0]
+        h0_max = np.max(h0[np.isfinite(h0[:, 1])][:, 1]) if len(h0[np.isfinite(h0[:, 1])]) > 0 else 0
+        h1 = res_tda['dgms'][1]
+        h1_max = np.max(h1[:, 1] - h1[:, 0]) if len(h1) > 0 else 0
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
-        # V12 Formula
-        score = (h0_max / (1.0 + h1_max)) * support * redundancy / stable_rank
+        # 3. Medoid Consensus
+        cos_sims = cosine_similarity(embs)
+        sim_sums = np.sum(cos_sims, axis=1) - 1.0
+        medoid_idx = np.argmax(sim_sums)
+        r1_medoid_sim = cos_sims[0, medoid_idx]
+
+        # TSA Formula
+        # Factual truth is stable, representative, and low-rank
+        score = (h0_max * r1_medoid_sim) / (stable_rank * (1.0 + h1_max))
+
         return score
 
 def run():
@@ -52,25 +53,16 @@ def run():
     df_prompts['label'] = df_prompts['difficulty_type'].map(label_map)
     df = pd.merge(df_responses, df_prompts[['prompt_id', 'label']], on='prompt_id')
     df = df[df['label'].isin([0, 1])].copy()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    engine = AMC_Engine(device=device)
+    engine = TSA_Engine(device=device)
     scores, labels, models = [], [], []
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        s = engine.compute_score(row['responses'])
+        s = engine.compute_tsa(row['responses'])
         if s is not None:
             scores.append(s); labels.append(row['label']); models.append(row['model'])
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
-    auc = roc_auc_score(labels, scores)
-    print(f"\nFinal AMC (v12) AUROC: {auc:.4f}")
+    print(f"\nOverall TSA AUROC: {roc_auc_score(labels, scores):.4f}")
     df_res = pd.DataFrame({'label': labels, 'score': scores, 'model': models})
     for m in df_res['model'].unique():
         print(f"Model {m} AUROC: {roc_auc_score(df_res[df_res['model']==m]['label'], df_res[df_res['model']==m]['score']):.4f}")

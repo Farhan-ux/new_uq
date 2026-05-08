@@ -4,17 +4,27 @@ import torch
 import zlib
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity
 from ripser import ripser
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
+import scipy.special
 
 def get_lexical_redundancy(resps):
     ind_sizes = [len(zlib.compress(r.encode())) for r in resps]
     joint_size = len(zlib.compress(" ".join(resps).encode()))
     return np.sum(ind_sizes) / (joint_size + 1e-9)
 
-class AMC_Engine:
+def compute_ece(y_true, y_prob, n_bins=10):
+    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
+    binids = np.digitize(y_prob, bins) - 1
+    bin_total = np.bincount(binids, minlength=n_bins)
+    nonzero = bin_total > 0
+    bin_probs = np.bincount(binids, weights=y_prob, minlength=n_bins)[nonzero] / bin_total[nonzero]
+    bin_acc = np.bincount(binids, weights=y_true, minlength=n_bins)[nonzero] / bin_total[nonzero]
+    return np.sum(np.abs(bin_probs - bin_acc) * bin_total[nonzero]) / len(y_true)
+
+class AMC_Final:
     def __init__(self, device="cpu"):
         self.device = device
         self.embed_model = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
@@ -35,14 +45,9 @@ class AMC_Engine:
         medoid_idx = np.argmax(np.sum(cos_sims, axis=1))
         support = (cos_sims[0, medoid_idx] + np.mean(np.sort(cos_sims[0])[-4:-1])) / 2.0
         redundancy = get_lexical_redundancy(clean)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
-        # V12 Formula
-        score = (h0_max / (1.0 + h1_max)) * support * redundancy / stable_rank
-        return score
+        raw_score = (h0_max / (1.0 + h1_max)) * support * redundancy / stable_rank
+        p_amc = float(scipy.special.expit(12.0 * raw_score - 3.0))
+        return p_amc
 
 def run():
     df_responses = pd.read_parquet('data/pilot/responses_100/responses.parquet')
@@ -52,28 +57,25 @@ def run():
     df_prompts['label'] = df_prompts['difficulty_type'].map(label_map)
     df = pd.merge(df_responses, df_prompts[['prompt_id', 'label']], on='prompt_id')
     df = df[df['label'].isin([0, 1])].copy()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    engine = AMC_Engine(device=device)
+    amc = AMC_Final(device=device)
     scores, labels, models = [], [], []
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        s = engine.compute_score(row['responses'])
+        s = amc.compute_score(row['responses'])
         if s is not None:
             scores.append(s); labels.append(row['label']); models.append(row['model'])
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> ea0c0ce9dbccc5d4461b60382ee5b981680afc64
     auc = roc_auc_score(labels, scores)
-    print(f"\nFinal AMC (v12) AUROC: {auc:.4f}")
+    ece = compute_ece(np.array(labels), np.array(scores))
+    print(f"\n--- AMC FINAL RESULTS ---")
+    print(f"Overall AUROC: {auc:.4f}")
+    print(f"Overall ECE: {ece:.4f}")
     df_res = pd.DataFrame({'label': labels, 'score': scores, 'model': models})
     for m in df_res['model'].unique():
-        print(f"Model {m} AUROC: {roc_auc_score(df_res[df_res['model']==m]['label'], df_res[df_res['model']==m]['score']):.4f}")
+        m_auc = roc_auc_score(df_res[df_res['model']==m]['label'], df_res[df_res['model']==m]['score'])
+        print(f"Model {m} AUROC: {m_auc:.4f}")
+    df_res.to_csv("amc_final_results.csv", index=False)
 
 if __name__ == "__main__":
     run()
