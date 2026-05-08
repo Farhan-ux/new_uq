@@ -17,3 +17,13 @@ Pilot Results:
 • Probability Range: [0.083, 0.999]
 • Runtime/prompt: 0.195s
 Decision: ABANDON (AUROC < 0.55)
+
+[ITERATION 5]
+Hypothesis: Global calibration of the SAME signal using Platt scaling (optimized sigmoid parameters) will reduce Expected Calibration Error without affecting discrimination.
+Mathematical/Algorithmic Core: P_same = sigmoid( 5.8385 * S_same - 0.4740 )
+Pilot Results (100-prompt set):
+• AUROC: 0.6002
+• ECE: 0.0203
+• Probability Range: [0.384, 0.999]
+• Runtime/prompt: 0.22s
+Decision: STOP - SUCCESS. Both criteria met.
